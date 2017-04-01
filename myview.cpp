@@ -89,8 +89,7 @@ void MyView::draw(double ptX, double ptY, double range)
         x = startX;
         for(int wi = 0; wi < img->size().width(); wi++)
         {
-
-            iter = getNumOfIterations(x, y, prevMinIter + maxIter, this->power, this->bound);
+            iter = getNumOfIterations(x, y, maxIter, this->power, this->bound);
             if(minIter > iter.x() && iter.x() >= 0)
                 minIter = iter.x();
             if(iter.x() == -1)
@@ -107,7 +106,7 @@ void MyView::draw(double ptX, double ptY, double range)
             else
             {
                 //int ind = (iter.x() - prevMinIter) - log2(log(iter.y()) / log(4));
-                int ind = (iter.x() - prevMinIter);
+                int ind = (iter.x() - minIter < 0 ? 0 : iter.x() - minIter);
                 bits[pointer] = colors[ind % colors.size()].blue();
                 pointer++;
                 bits[pointer] = colors[ind % colors.size()].green();
@@ -121,18 +120,20 @@ void MyView::draw(double ptX, double ptY, double range)
             //if(iter > 250)
             //    qDebug() << "OVER 250";
         }
+        //qDebug() << "he = " << he;
         //QMessageBox::information(nullptr, "E", "cnt = " + QString::number(counter));
         if(he % 200 == 0)
         {
             scene->addItem(new QGraphicsPixmapItem(QPixmap::fromImage(*img)));
             QCoreApplication::processEvents();
         }
-        qDebug() << "he = " << he;
+
         y -= h;
     }
 
     scene->clear();
     scene->addItem(new QGraphicsPixmapItem(QPixmap::fromImage(*img)));
+    qDebug() << "Drawing succesful!";
 
 }
 
@@ -141,8 +142,17 @@ void MyView::mousePressEvent(QMouseEvent *event)
     double realX = (ptX - h * scene->width() / 2.0) + (event->x() * h);
     double realY = (ptY + h * scene->height() / 2.0) - (event->y() * h);
     //QMessageBox::information(nullptr, "CLICK", "x = " + QString::number(realX) + "\nY = " + QString::number(realY));
-    emit positionChanged(QPointF(realX, realY), range / zoom);
-    draw(realX, realY, range / zoom);
+    if(event->button() == Qt::LeftButton)
+    {
+        emit positionChanged(QPointF(realX, realY), range / zoom);
+        draw(realX, realY, range / zoom);
+    }
+    else
+    {
+        emit positionChanged(QPointF(realX, realY), range * zoom);
+        draw(realX, realY, range * zoom);
+    }
+
 }
 
 void MyView::resizeEvent(QResizeEvent *e)
